@@ -3,100 +3,171 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OTT Hub AI</title>
+<title>OTT Hub MAX</title>
 <link rel="manifest" href="manifest.json">
 
 <style>
-body { background:#0f0f0f; color:white; text-align:center; font-family:Arial; }
-input { padding:12px; width:240px; border-radius:8px; border:none; }
-button { padding:10px; border:none; border-radius:8px; background:red; color:white; }
-img { border-radius:10px; }
-.ott img { width:60px; margin:10px; cursor:pointer; }
-.rec img { width:120px; margin:10px; cursor:pointer; }
+*{box-sizing:border-box}
+body{margin:0;background:#0f0f0f;color:white;font-family:Arial}
+header{padding:20px;text-align:center;font-size:24px;font-weight:bold}
+.search-box{display:flex;justify-content:center;gap:10px;padding:10px}
+input{padding:12px;width:260px;border:none;border-radius:10px}
+button{padding:12px;border:none;border-radius:10px;background:red;color:white;cursor:pointer}
+.container{text-align:center;padding:20px}
+.poster{width:160px;border-radius:12px}
+.ott-container{display:flex;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.ott-card{margin:10px;padding:10px;background:#1c1c1c;border-radius:15px;cursor:pointer;transition:.2s}
+.ott-card:hover{transform:scale(1.1)}
+.ott-card img{width:70px;background:white;padding:10px;border-radius:10px}
+.rec{display:flex;overflow-x:auto;padding:10px}
+.rec img{width:120px;margin:10px;border-radius:10px;cursor:pointer}
+.favorite p{cursor:pointer}
+.badge{display:inline-block;padding:4px 8px;margin:4px;background:#333;border-radius:8px;font-size:12px}
 </style>
 </head>
 
 <body>
 
-<h1>🎬 OTT Hub AI</h1>
+<header>OTT Hub MAX</header>
 
-<input id="search" placeholder="영화 검색">
+<div class="search-box">
+<input id="search" placeholder="영화 / 드라마 검색">
 <button onclick="searchMovie()">검색</button>
+</div>
 
-<div id="result"></div>
+<div class="container" id="result"></div>
 
-<h2>🔥 AI 추천</h2>
-<div id="recommend"></div>
+<h2 style="text-align:center;">추천</h2>
+<div class="rec" id="recommend"></div>
 
-<h2>⭐ 즐겨찾기</h2>
-<div id="favorites"></div>
+<h2 style="text-align:center;">즐겨찾기</h2>
+<div class="favorite" id="favorites" style="text-align:center;"></div>
 
 <script>
-const API_KEY = "5369e70114a79b809d50c4075c60e7ac";
+const API_KEY="여기에_API키";
 
-async function searchMovie() {
-  const query = document.getElementById("search").value;
+document.getElementById("search").addEventListener("keypress",e=>{
+if(e.key==="Enter")searchMovie();
+});
 
-  const res = await fetch(
-    `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${query}&language=ko-KR`
-  );
+async function searchMovie(){
+const query=document.getElementById("search").value.trim();
+if(!query)return;
 
-  const data = await res.json();
-  const movie = data.results[0];
-  if (!movie) return;
+document.getElementById("result").innerHTML="로딩중";
 
-  document.getElementById("result").innerHTML = `
-    <h2>${movie.title}</h2>
-    <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" width="150">
-    <p>${movie.release_date}</p>
-    <div class="ott">${ottButtons(movie.title)}</div>
-    <button onclick="addFavorite('${movie.title}')">⭐ 즐겨찾기</button>
-  `;
+try{
 
-  aiRecommend(movie.id);
+const res=await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${5369e70114a79b809d50c4075c60e7ac}&query=${query}&language=ko-KR`);
+const data=await res.json();
+
+if(!data.results||data.results.length===0){
+document.getElementById("result").innerHTML="결과 없음";
+return;
 }
 
-function ottButtons(title) {
-  const otts = ["netflix","disney","tving","wavve"];
-  return otts.map(o =>
-    `<img src="https://logo.clearbit.com/${o}.com"
-      onclick="goOTT('${title}','${o}')">`
-  ).join('');
+const item=data.results.find(x=>x.media_type==="movie"||x.media_type==="tv");
+if(!item){
+document.getElementById("result").innerHTML="지원 안됨";
+return;
 }
 
-function goOTT(title, ott) {
-  window.open(`https://www.google.com/search?q=${title}+${ott}`);
+const id=item.id;
+const type=item.media_type;
+
+const providerRes=await fetch(`https://api.themoviedb.org/3/${type}/${id}/watch/providers?api_key=${5369e70114a79b809d50c4075c60e7ac}`);
+const providerData=await providerRes.json();
+
+const providers=providerData.results?.KR?.flatrate||[];
+
+const extRes=await fetch(`https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${5369e70114a79b809d50c4075c60e7ac}`);
+const extData=await extRes.json();
+
+const imdb=extData.imdb_id||"";
+
+const title=item.title||item.name;
+
+document.getElementById("result").innerHTML=`
+<h2>${title}</h2>
+<img class="poster" src="https://image.tmdb.org/t/p/w500${item.poster_path}">
+<p>${item.release_date||item.first_air_date||""}</p>
+<div>${providers.length?'<span class="badge">OTT 있음</span>':'<span class="badge">OTT 없음</span>'}</div>
+<div class="ott-container">
+${createOTT(providers,title,imdb)}
+</div>
+<button onclick="addFavorite('${title}')">즐겨찾기</button>
+`;
+
+aiRecommend(type,id);
+
+}catch(e){
+document.getElementById("result").innerHTML="오류 발생";
+}
 }
 
-async function aiRecommend(id) {
-  const res = await fetch(
-    `https://api.themoviedb.org/3/movie/${id}/recommendations?api_key=${API_KEY}&language=ko-KR`
-  );
-  const data = await res.json();
+function createOTT(providers,title,imdb){
+const encoded=encodeURIComponent(title);
 
-  document.getElementById("recommend").innerHTML =
-    data.results.slice(0,6).map(m => `
-      <img src="https://image.tmdb.org/t/p/w500${m.poster_path}"
-      onclick="searchAgain('${m.title}')">
-    `).join('');
+const map={
+8:{name:"Netflix",logo:"https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",url:`https://www.netflix.com/search?q=${encoded}`},
+337:{name:"Disney+",logo:"https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg",url:`https://www.disneyplus.com/search?q=${encoded}`},
+356:{name:"Wavve",logo:"https://upload.wikimedia.org/wikipedia/commons/0/0c/Wavve_logo.svg",url:`https://www.wavve.com/search?keyword=${encoded}`},
+97:{name:"TVING",logo:"https://upload.wikimedia.org/wikipedia/commons/1/1f/Tving_logo.svg",url:`https://www.tving.com/search?q=${encoded}`}
+};
+
+let html="";
+
+providers.forEach(p=>{
+if(map[p.provider_id]){
+const o=map[p.provider_id];
+html+=`
+<div class="ott-card" onclick="window.open('${o.url}','_blank')">
+<img src="${o.logo}">
+<p>${o.name}</p>
+</div>
+`;
+}
+});
+
+if(imdb){
+html+=`
+<div class="ott-card" onclick="window.open('https://www.imdb.com/title/${imdb}','_blank')">
+<img src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg">
+<p>IMDb</p>
+</div>
+`;
 }
 
-function addFavorite(title) {
-  let fav = JSON.parse(localStorage.getItem("fav")) || [];
-  fav.push(title);
-  localStorage.setItem("fav", JSON.stringify(fav));
-  loadFav();
+return html||"<p>제공 OTT 없음</p>";
 }
 
-function loadFav() {
-  let fav = JSON.parse(localStorage.getItem("fav")) || [];
-  document.getElementById("favorites").innerHTML =
-    fav.map(f => `<p onclick="searchAgain('${f}')">${f}</p>`).join('');
+async function aiRecommend(type,id){
+const res=await fetch(`https://api.themoviedb.org/3/${type}/${id}/recommendations?api_key=${API_KEY}&language=ko-KR`);
+const data=await res.json();
+
+document.getElementById("recommend").innerHTML=
+(data.results||[]).slice(0,6).map(m=>`
+<img src="https://image.tmdb.org/t/p/w500${m.poster_path}"
+onclick="searchAgain('${m.title||m.name}')">
+`).join('');
 }
 
-function searchAgain(title) {
-  document.getElementById("search").value = title;
-  searchMovie();
+function addFavorite(title){
+let fav=JSON.parse(localStorage.getItem("fav"))||[];
+if(!fav.includes(title))fav.push(title);
+localStorage.setItem("fav",JSON.stringify(fav));
+loadFav();
+}
+
+function loadFav(){
+let fav=JSON.parse(localStorage.getItem("fav"))||[];
+document.getElementById("favorites").innerHTML=
+fav.map(f=>`<p onclick="searchAgain('${f}')">${f}</p>`).join('');
+}
+
+function searchAgain(title){
+document.getElementById("search").value=title;
+searchMovie();
 }
 
 loadFav();
