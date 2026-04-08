@@ -3,20 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart OTT Search AI V3</title>
+<title> movie Search</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
 <style>
 body {
   margin:0;
   font-family: Arial, sans-serif;
-  color: white;
-  text-align: center;
-  background: #111;
-  background-size: cover;
-  background-position: center;
-  transition: background 0.5s ease;
+  color:white;
+  text-align:center;
+  background:#111;
+  background-size:cover;
+  background-position:center;
+  transition:background 0.5s ease;
 }
 #overlay {
-  position: fixed;
+  position:fixed;
   top:0; left:0;
   width:100%; height:100%;
   backdrop-filter: blur(20px);
@@ -26,13 +28,15 @@ header {
   padding:20px;
   font-size:28px;
   font-weight:bold;
-  text-shadow: 1px 1px 6px black;
+  text-shadow:1px 1px 6px black;
 }
 #search-container {
-  margin-top: 10px;
+  margin-top:10px;
   display:flex;
   justify-content:center;
   align-items:center;
+  position:relative;
+  z-index:1;
 }
 #search {
   padding:12px;
@@ -42,7 +46,7 @@ header {
   backdrop-filter: blur(8px);
   background: rgba(255,255,255,0.2);
   color:white;
-  text-shadow: 1px 1px 3px black;
+  text-shadow:1px 1px 3px black;
   font-size:16px;
   margin-right:8px;
 }
@@ -50,7 +54,7 @@ button {
   padding:12px;
   border:none;
   border-radius:20px;
-  background:red;
+  background:#e50914;
   color:white;
   cursor:pointer;
 }
@@ -62,12 +66,7 @@ button {
   display:inline-block;
   max-width:400px;
 }
-.poster {
-  width:180px;
-  border-radius:12px;
-  margin-top:10px;
-  box-shadow: 0 0 15px black;
-}
+.poster { width:180px; border-radius:12px; margin-top:10px; box-shadow:0 0 15px black; }
 .ott {
   display:flex;
   justify-content:center;
@@ -83,120 +82,73 @@ button {
   width:100px;
   text-align:center;
 }
-.ott img {
-  width:60px;
-  border-radius:10px;
-}
-.section {
-  margin-top:30px;
-}
-.rec {
-  display:flex;
-  overflow-x:auto;
-  padding:10px;
-}
-.rec img {
-  width:120px;
-  margin:10px;
-  border-radius:10px;
-  cursor:pointer;
-  box-shadow:0 0 10px black;
-}
-h2.section-title {
-  text-align:left;
-  margin-left:20px;
-}
+.section { margin-top:30px; }
+.rec { display:flex; overflow-x:auto; padding:10px; }
+.rec img { width:120px; margin:10px; border-radius:10px; cursor:pointer; box-shadow:0 0 10px black; }
+h2.section-title { text-align:left; margin-left:20px; }
 </style>
 </head>
 <body>
-
 <div id="overlay"></div>
-<header>Smart OTT Search AI</header>
-
+<header>Smart OTT Movie Search</header>
 <div id="search-container">
   <input id="search" placeholder="영화 / 드라마 검색">
   <button onclick="searchMovie()">검색</button>
 </div>
-
 <div id="result"></div>
-
 <div class="section">
   <h2 class="section-title">추천</h2>
   <div class="rec" id="recommend"></div>
 </div>
-
 <div class="section">
   <h2 class="section-title">AI 추천</h2>
   <div class="rec" id="aiRec"></div>
 </div>
-
 <script>
-const API_KEY = "5369e70114a79b809d50c4075c60e7ac";
-
-document.getElementById("search").addEventListener("keypress", e=>{
+const API_KEY="5369e70114a79b809d50c4075c60e7ac";
+window.onload = ()=>{
+  loadPopularMovies();
+  loadAIRecommendations();
+};
+document.getElementById("search").addEventListener("keypress",e=>{
   if(e.key==="Enter") searchMovie();
 });
-
 async function searchMovie(){
-  const query = document.getElementById("search").value.trim();
+  const query=document.getElementById("search").value.trim();
   if(!query) return;
-
   document.getElementById("result").innerHTML="로딩중...";
-
   try{
-    const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=ko-KR`);
-    const data = await res.json();
-    if(!data.results || data.results.length===0){
-      document.getElementById("result").innerHTML="결과 없음";
-      return;
+    const res=await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=ko-KR`);
+    const data=await res.json();
+    if(!data.results||data.results.length===0){
+      document.getElementById("result").innerHTML="결과 없음"; return;
     }
-
-    const item = data.results.find(x=>x.media_type==="movie"||x.media_type==="tv");
-    if(!item){
-      document.getElementById("result").innerHTML="지원 안됨";
-      return;
-    }
-
-    const id = item.id;
-    const type = item.media_type;
-    const title = item.title || item.name;
-
+    const item=data.results.find(x=>x.media_type==="movie"||x.media_type==="tv");
+    if(!item){ document.getElementById("result").innerHTML="지원 안됨"; return; }
+    const id=item.id, type=item.media_type, title=item.title||item.name;
     if(item.backdrop_path){
-      document.getElementById("overlay").style.background = `
-      url(https://image.tmdb.org/t/p/original${item.backdrop_path}) no-repeat center / cover`;
+      document.getElementById("overlay").style.background=`url(https://image.tmdb.org/t/p/original${item.backdrop_path}) no-repeat center / cover`;
     }
-
-    const provRes = await fetch(`https://api.themoviedb.org/3/${type}/${id}/watch/providers?api_key=${API_KEY}`);
-    const provData = await provRes.json();
-    const providers = provData.results?.KR?.flatrate || [];
-
-    const extRes = await fetch(`https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${API_KEY}`);
-    const extData = await extRes.json();
-    const imdb = extData.imdb_id || "";
-
+    const provRes=await fetch(`https://api.themoviedb.org/3/${type}/${id}/watch/providers?api_key=${API_KEY}`);
+    const provData=await provRes.json();
+    const providers=provData.results?.KR?.flatrate||[];
+    const extRes=await fetch(`https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${API_KEY}`);
+    const extData=await extRes.json();
+    const imdb=extData.imdb_id||"";
     document.getElementById("result").innerHTML=`
       <h2>${title}</h2>
       <img class="poster" src="https://image.tmdb.org/t/p/w500${item.poster_path}">
       <div class="ott">${renderOTT(providers,title,imdb)}</div>
     `;
-
     getRecommendations(type,id);
-    getAIRecommendations(query, type, id);
-
   }catch(err){
     console.error(err);
     document.getElementById("result").innerHTML="오류 발생";
   }
 }
-
-function renderOTT(providers, title, imdb){
-  const e = encodeURIComponent(title);
-  let html = "";
-
-  const tmdbMap = {};
-  providers.forEach(p=>{ tmdbMap[p.provider_name.toLowerCase()] = true });
-
-  const ottList = [
+function renderOTT(providers,title,imdb){
+  const e=encodeURIComponent(title);
+  const ottList=[
     {name:"Netflix", url:`https://www.netflix.com/search?q=${e}`},
     {name:"Disney+", url:`https://www.disneyplus.com/search?q=${e}`},
     {name:"Wavve", url:`https://www.wavve.com/search?keyword=${e}`},
@@ -206,40 +158,42 @@ function renderOTT(providers, title, imdb){
     {name:"Apple TV+", url:`https://tv.apple.com/search/${e}`},
     {name:"Prime Video", url:`https://www.amazon.com/s?k=${e}&i=instant-video`}
   ];
-
+  let html="";
+  const providerNames=providers.map(p=>p.provider_name.toLowerCase());
   ottList.forEach(o=>{
-    const has = tmdbMap[o.name.toLowerCase()];
-    html += `<div onclick="window.open('${o.url}')"><p>${o.name}</p></div>`;
+    if(providerNames.includes(o.name.toLowerCase())) html+=`<div onclick="window.open('${o.url}')"><p>${o.name}</p></div>`;
   });
-
-  if(imdb){
-    html += `<div onclick="window.open('https://www.imdb.com/title/${imdb}')"><p>IMDb</p></div>`;
-  }
+  if(imdb) html+=`<div onclick="window.open('https://www.imdb.com/title/${imdb}')"><p>IMDb</p></div>`;
+  if(html==="") html="OTT 없음";
   return html;
 }
-
 async function getRecommendations(type,id){
-  const res = await fetch(`https://api.themoviedb.org/3/${type}/${id}/recommendations?api_key=${API_KEY}&language=ko-KR`);
-  const data = await res.json();
+  const res=await fetch(`https://api.themoviedb.org/3/${type}/${id}/recommendations?api_key=${API_KEY}&language=ko-KR`);
+  const data=await res.json();
   document.getElementById("recommend").innerHTML=(data.results||[]).slice(0,6).map(x=>`
     <img src="https://image.tmdb.org/t/p/w500${x.poster_path}" onclick="again('${x.title||x.name}')">
   `).join('');
 }
-
-async function getAIRecommendations(query,type,id){
-  const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=ko-KR&page=2`);
-  const data = await res.json();
-  const results = (data.results||[]).slice(0,6);
-  document.getElementById("aiRec").innerHTML = results.map(x=>{
-    return `<img src="https://image.tmdb.org/t/p/w500${x.poster_path}" onclick="again('${x.title||x.name}')">`;
-  }).join('');
+async function loadPopularMovies(){
+  const res=await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=ko-KR&page=1`);
+  const data=await res.json();
+  const results=(data.results||[]).slice(0,6);
+  document.getElementById("recommend").innerHTML=results.map(x=>`
+    <img src="https://image.tmdb.org/t/p/w500${x.poster_path}" onclick="again('${x.title||x.name}')">
+  `).join('');
 }
-
+async function loadAIRecommendations(){
+  const res=await fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${API_KEY}&language=ko-KR&page=1`);
+  const data=await res.json();
+  const results=(data.results||[]).slice(0,6);
+  document.getElementById("aiRec").innerHTML=results.map(x=>`
+    <img src="https://image.tmdb.org/t/p/w500${x.poster_path}" onclick="again('${x.title||x.name}')">
+  `).join('');
+}
 function again(title){
-  document.getElementById("search").value = title;
+  document.getElementById("search").value=title;
   searchMovie();
 }
 </script>
-
 </body>
 </html>
