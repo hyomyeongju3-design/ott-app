@@ -58,7 +58,7 @@ document.getElementById("result").innerHTML="로딩중";
 
 try{
 
-const res=await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${5369e70114a79b809d50c4075c60e7ac}&query=${query}&language=ko-KR`);
+api_key=${API_KEY}
 const data=await res.json();
 
 if(!data.results||data.results.length===0){
@@ -75,12 +75,11 @@ return;
 const id=item.id;
 const type=item.media_type;
 
-const providerRes=await fetch(`https://api.themoviedb.org/3/${type}/${id}/watch/providers?api_key=${5369e70114a79b809d50c4075c60e7ac}`);
+api_key=${API_KEY}
 const providerData=await providerRes.json();
 
 const providers=providerData.results?.KR?.flatrate||[];
-
-const extRes=await fetch(`https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${5369e70114a79b809d50c4075c60e7ac}`);
+api_key=${API_KEY}
 const extData=await extRes.json();
 
 const imdb=extData.imdb_id||"";
@@ -142,7 +141,7 @@ return html||"<p>제공 OTT 없음</p>";
 }
 
 async function aiRecommend(type,id){
-const res=await fetch(`https://api.themoviedb.org/3/${type}/${id}/recommendations?api_key=${5369e70114a79b809d50c4075c60e7ac}&language=ko-KR`);
+api_key=${API_KEY}
 const data=await res.json();
 
 document.getElementById("recommend").innerHTML=
