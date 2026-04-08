@@ -1,5 +1,5 @@
 {
-  "name": "Smart OTT Search AI",
+  "name": "movie search",
   "short_name": "OTT AI",
   "start_url": "./index.html",
   "display": "standalone",
