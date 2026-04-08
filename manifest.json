@@ -1,8 +1,21 @@
 {
-  "name": "OTT Search",
-  "short_name": "OTT",
+  "name": "Smart OTT Search AI",
+  "short_name": "OTT AI",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000"
+  "background_color": "#111111",
+  "theme_color": "#e50914",
+  "description": "영화와 드라마 검색, 국내외 OTT 링크 및 AI 추천까지 한 번에!",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
