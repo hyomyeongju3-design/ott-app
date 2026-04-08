@@ -65,29 +65,30 @@ button {
   color:white;
   cursor:pointer;
 }
-#result {
-  margin-top:20px;
+.result-item {
   background: rgba(0,0,0,0.5);
   padding:20px;
   border-radius:20px;
   display:inline-block;
-  max-width:400px;
+  margin:20px;
+  max-width:300px;
 }
 .poster { width:180px; border-radius:12px; margin-top:10px; box-shadow:0 0 15px black; }
 .ott {
   display:flex;
   justify-content:center;
   flex-wrap:wrap;
-  margin-top:20px;
+  margin-top:10px;
 }
 .ott div {
-  margin:10px;
+  margin:5px;
   padding:10px;
   background: rgba(28,28,28,0.8);
   border-radius:12px;
   cursor:pointer;
   width:100px;
   text-align:center;
+  font-size:14px;
 }
 .section { margin-top:30px; }
 .rec { display:flex; overflow-x:auto; padding:10px; }
@@ -117,6 +118,8 @@ h2.section-title { text-align:left; margin-left:20px; }
 
 <script>
 const API_KEY="5369e70114a79b809d50c4075c60e7ac";
+
+// OTT 매핑
 const ottMap = {
   "범죄도시":["Coupang Play","Wavve"],
   "킹덤":["Netflix"],
@@ -138,14 +141,21 @@ const ottLinks = {
   "Disney+":"https://www.disneyplus.com/search?q="
 };
 const aiPopularMovies = Object.keys(ottMap);
+
 window.onload = ()=>{ loadAIRecommendations(); };
-document.getElementById("search").addEventListener("keypress",e=>{ if(e.key==="Enter") searchMovie(); });
+
+document.getElementById("search").addEventListener("keypress",e=>{
+  if(e.key==="Enter") searchMovie();
+});
+
 function goHome(){
   document.getElementById("result").innerHTML="";
   document.getElementById("overlay").style.background="";
   document.getElementById("search").value="";
   loadAIRecommendations();
 }
+
+// AI 추천
 function loadAIRecommendations(){
   const container = document.getElementById("aiRec");
   const shuffled = aiPopularMovies.sort(()=>0.5-Math.random());
@@ -154,10 +164,12 @@ function loadAIRecommendations(){
     return `<div onclick="searchAgain('${title}')"><img src="${poster}"><p>${title}</p></div>`;
   }).join('');
 }
+
 function searchAgain(title){
   document.getElementById("search").value = title;
   searchMovie();
 }
+
 function getPosterPath(title){
   const map = {
     "범죄도시":"/2FzOEg1nGZjJK5vAaCVS0lbp6rL.jpg",
@@ -173,6 +185,8 @@ function getPosterPath(title){
   };
   return map[title] || "";
 }
+
+// 검색
 async function searchMovie(){
   const query=document.getElementById("search").value.trim();
   if(!query) return;
@@ -181,21 +195,30 @@ async function searchMovie(){
     const res=await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=ko-KR`);
     const data=await res.json();
     if(!data.results || data.results.length===0){ document.getElementById("result").innerHTML="결과 없음"; return; }
-    const item=data.results.find(x=>x.media_type==="movie"||x.media_type==="tv");
-    if(!item){ document.getElementById("result").innerHTML="지원 안됨"; return; }
-    const title=item.title||item.name;
-    const poster=item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : getPosterPath(title);
-    if(item.backdrop_path){
-      document.getElementById("overlay").style.background=`url(https://image.tmdb.org/t/p/original${item.backdrop_path}) no-repeat center / cover`;
-    }else{ document.getElementById("overlay").style.background=""; }
-    const providerData = ottMap[title] || [];
-    document.getElementById("result").innerHTML=`
-      <h2>${title}</h2>
-      <img class="poster" src="${poster}">
-      <div class="ott">
-        ${providerData.map(p=>`<div onclick="window.open('${ottLinks[p]}${encodeURIComponent(title)}')">${p}</div>`).join('')}
-      </div>
-    `;
+
+    const resultsDiv = document.getElementById("result");
+    resultsDiv.innerHTML = "";
+
+    for(const item of data.results){
+      if(item.media_type!=="movie" && item.media_type!=="tv") continue;
+      const title=item.title||item.name;
+      const poster=item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : getPosterPath(title);
+
+      if(item.backdrop_path){
+        document.getElementById("overlay").style.background=`url(https://image.tmdb.org/t/p/original${item.backdrop_path}) no-repeat center / cover`;
+      }
+
+      const providers = ottMap[title] || [];
+      const ottHtml = providers.map(p=>`<div onclick="window.open('${ottLinks[p]}${encodeURIComponent(title)}')">${p}</div>`).join('');
+
+      resultsDiv.innerHTML += `
+        <div class="result-item">
+          <h2>${title}</h2>
+          <img class="poster" src="${poster}">
+          <div class="ott">${ottHtml || "OTT 정보 없음"}</div>
+        </div>
+      `;
+    }
   }catch(err){ console.error(err); document.getElementById("result").innerHTML="오류 발생"; }
 }
 </script>
