@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OTT Hub AI</title>
+<link rel="manifest" href="manifest.json">
+
+<style>
+body { background:#0f0f0f; color:white; text-align:center; font-family:Arial; }
+input { padding:12px; width:240px; border-radius:8px; border:none; }
+button { padding:10px; border:none; border-radius:8px; background:red; color:white; }
+img { border-radius:10px; }
+.ott img { width:60px; margin:10px; cursor:pointer; }
+.rec img { width:120px; margin:10px; cursor:pointer; }
+</style>
+</head>
+
+<body>
+
+<h1>🎬 OTT Hub AI</h1>
+
+<input id="search" placeholder="영화 검색">
+<button onclick="searchMovie()">검색</button>
+
+<div id="result"></div>
+
+<h2>🔥 AI 추천</h2>
+<div id="recommend"></div>
+
+<h2>⭐ 즐겨찾기</h2>
+<div id="favorites"></div>
+
+<script>
+const API_KEY = "여기에_API키";
+
+async function searchMovie() {
+  const query = document.getElementById("search").value;
+
+  const res = await fetch(
+    `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${query}&language=ko-KR`
+  );
+
+  const data = await res.json();
+  const movie = data.results[0];
+  if (!movie) return;
+
+  document.getElementById("result").innerHTML = `
+    <h2>${movie.title}</h2>
+    <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" width="150">
+    <p>${movie.release_date}</p>
+    <div class="ott">${ottButtons(movie.title)}</div>
+    <button onclick="addFavorite('${movie.title}')">⭐ 즐겨찾기</button>
+  `;
+
+  aiRecommend(movie.id);
+}
+
+function ottButtons(title) {
+  const otts = ["netflix","disney","tving","wavve"];
+  return otts.map(o =>
+    `<img src="https://logo.clearbit.com/${o}.com"
+      onclick="goOTT('${title}','${o}')">`
+  ).join('');
+}
+
+function goOTT(title, ott) {
+  window.open(`https://www.google.com/search?q=${title}+${ott}`);
+}
+
+async function aiRecommend(id) {
+  const res = await fetch(
+    `https://api.themoviedb.org/3/movie/${id}/recommendations?api_key=${API_KEY}&language=ko-KR`
+  );
+  const data = await res.json();
+
+  document.getElementById("recommend").innerHTML =
+    data.results.slice(0,6).map(m => `
+      <img src="https://image.tmdb.org/t/p/w500${m.poster_path}"
+      onclick="searchAgain('${m.title}')">
+    `).join('');
+}
+
+function addFavorite(title) {
+  let fav = JSON.parse(localStorage.getItem("fav")) || [];
+  fav.push(title);
+  localStorage.setItem("fav", JSON.stringify(fav));
+  loadFav();
+}
+
+function loadFav() {
+  let fav = JSON.parse(localStorage.getItem("fav")) || [];
+  document.getElementById("favorites").innerHTML =
+    fav.map(f => `<p onclick="searchAgain('${f}')">${f}</p>`).join('');
+}
+
+function searchAgain(title) {
+  document.getElementById("search").value = title;
+  searchMovie();
+}
+
+loadFav();
+</script>
+
+</body>
+</html>
