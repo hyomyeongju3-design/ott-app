@@ -7,16 +7,76 @@
 <link rel="manifest" href="manifest.json">
 
 <style>
-body{margin:0;background:#0f0f0f;color:white;font-family:Arial;text-align:center}
-header{padding:20px;font-size:24px;font-weight:bold}
-input{padding:12px;width:240px;border:none;border-radius:10px}
-button{padding:12px;border:none;border-radius:10px;background:red;color:white}
-.poster{width:160px;border-radius:12px;margin-top:10px}
-.ott{display:flex;justify-content:center;flex-wrap:wrap;margin-top:20px}
-.ott div{margin:10px;padding:10px;background:#1c1c1c;border-radius:12px;cursor:pointer}
-.ott img{width:60px;background:white;padding:10px;border-radius:10px}
-.rec{display:flex;overflow-x:auto;padding:10px}
-.rec img{width:120px;margin:10px;border-radius:10px;cursor:pointer}
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    color: white;
+    text-align: center;
+    background: url('https://images.unsplash.com/photo-1581905764498-5d61675ed3f3?fit=crop&w=1950&q=80') no-repeat center center fixed;
+    background-size: cover;
+    backdrop-filter: blur(4px);
+}
+header {
+    padding: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    text-shadow: 1px 1px 6px black;
+}
+input {
+    padding: 12px;
+    width: 240px;
+    border: none;
+    border-radius: 10px;
+    margin-right: 8px;
+}
+button {
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: red;
+    color: white;
+    cursor: pointer;
+}
+.poster {
+    width: 180px;
+    border-radius: 12px;
+    margin-top: 10px;
+    box-shadow: 0 0 15px black;
+}
+.ott {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+.ott div {
+    margin: 10px;
+    padding: 10px;
+    background: rgba(28,28,28,0.8);
+    border-radius: 12px;
+    cursor: pointer;
+    width: 100px;
+    text-align: center;
+}
+.ott img {
+    width: 60px;
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+}
+.rec {
+    display: flex;
+    overflow-x: auto;
+    padding: 10px;
+    margin-top: 20px;
+}
+.rec img {
+    width: 120px;
+    margin: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 0 10px black;
+}
 </style>
 </head>
 
@@ -33,103 +93,104 @@ button{padding:12px;border:none;border-radius:10px;background:red;color:white}
 <div class="rec" id="recommend"></div>
 
 <script>
-
 const API_KEY = "5369e70114a79b809d50c4075c60e7ac";
 
-document.getElementById("search").addEventListener("keypress",e=>{
-if(e.key==="Enter")searchMovie();
+document.getElementById("search").addEventListener("keypress", e => {
+    if(e.key === "Enter") searchMovie();
 });
 
-async function searchMovie(){
-const q=document.getElementById("search").value.trim();
-if(!q)return;
+async function searchMovie() {
+    const q = document.getElementById("search").value.trim();
+    if(!q) return;
+    document.getElementById("result").innerHTML = "로딩중...";
 
-document.getElementById("result").innerHTML="로딩중";
+    try {
+        const r = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${q}&language=ko-KR`);
+        const d = await r.json();
 
-try{
+        if(!d.results || d.results.length === 0) {
+            document.getElementById("result").innerHTML = "결과 없음";
+            return;
+        }
 
-const r=await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${q}&language=ko-KR`);
-const d=await r.json();
+        const m = d.results.find(x => x.media_type==="movie" || x.media_type==="tv");
+        if(!m) {
+            document.getElementById("result").innerHTML = "지원 안됨";
+            return;
+        }
 
-if(!d.results||d.results.length===0){
-document.getElementById("result").innerHTML="결과 없음";
-return;
+        const id = m.id;
+        const type = m.media_type;
+
+        const pr = await fetch(`https://api.themoviedb.org/3/${type}/${id}/watch/providers?api_key=${API_KEY}`);
+        const pd = await pr.json();
+        const providers = pd.results?.KR?.flatrate || [];
+
+        const er = await fetch(`https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${API_KEY}`);
+        const ed = await er.json();
+        const imdb = ed.imdb_id || "";
+
+        const title = m.title || m.name;
+
+        document.getElementById("result").innerHTML = `
+            <h2>${title}</h2>
+            <img class="poster" src="https://image.tmdb.org/t/p/w500${m.poster_path}">
+            <div class="ott">${ott(providers,title,imdb)}</div>
+        `;
+
+        rec(type,id);
+
+    } catch(e) {
+        document.getElementById("result").innerHTML = "오류 발생";
+        console.error(e);
+    }
 }
 
-const m=d.results.find(x=>x.media_type==="movie"||x.media_type==="tv");
-if(!m){
-document.getElementById("result").innerHTML="지원 안됨";
-return;
-}
+function ott(p, t, imdb) {
+    const e = encodeURIComponent(t);
 
-const id=m.id;
-const type=m.media_type;
+    
+    const map = {
+        8:["Netflix","https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",`https://www.netflix.com/search?q=${e}`],
+        337:["Disney+","https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg",`https://www.disneyplus.com/search?q=${e}`],
+        356:["Wavve","https://upload.wikimedia.org/wikipedia/commons/0/0c/Wavve_logo.svg",`https://www.wavve.com/search?keyword=${e}`],
+        97:["TVING","https://upload.wikimedia.org/wikipedia/commons/1/1f/Tving_logo.svg",`https://www.tving.com/search?q=${e}`],
+        119:["Apple TV+","https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_TV_Plus_Logo.svg",`https://tv.apple.com/search/${e}`],
+        9:["Amazon Prime Video","https://upload.wikimedia.org/wikipedia/commons/f/f1/Prime_Video.png",`https://www.amazon.com/s?k=${e}&i=instant-video`],
+        384:["Coupang Play","https://upload.wikimedia.org/wikipedia/commons/e/e4/Coupang_Play_logo.svg",`https://www.coupangplay.com/search/${e}`],
+        10:["HBO Max","https://upload.wikimedia.org/wikipedia/commons/1/17/HBO_Max_Logo.svg",`https://play.hbomax.com/page/urn:hbo:page:search:${e}`],
+        37:["Google Play Movies","https://upload.wikimedia.org/wikipedia/commons/7/70/Google_Play_2016_icon.svg",`https://play.google.com/store/search?q=${e}&c=movies`]
+    };
 
-const pr=await fetch(`https://api.themoviedb.org/3/${type}/${id}/watch/providers?api_key=${API_KEY}`);
-const pd=await pr.json();
-const providers=pd.results?.KR?.flatrate||[];
+    let h = "";
+    p.forEach(x => {
+        if(map[x.provider_id]){
+            const o = map[x.provider_id];
+            h += `<div onclick="window.open('${o[2]}')"><img src="${o[1]}"><p>${o[0]}</p></div>`;
+        }
+    });
 
-const er=await fetch(`https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${API_KEY}`);
-const ed=await er.json();
+    if(imdb){
+        h += `<div onclick="window.open('https://www.imdb.com/title/${imdb}')"><img src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg"><p>IMDb</p></div>`;
+    }
 
-const imdb=ed.imdb_id||"";
-const title=m.title||m.name;
-
-document.getElementById("result").innerHTML=`
-<h2>${title}</h2>
-<img class="poster" src="https://image.tmdb.org/t/p/w500${m.poster_path}">
-<div class="ott">${ott(providers,title,imdb)}</div>
-`;
-
-rec(type,id);
-
-}catch(e){
-document.getElementById("result").innerHTML="오류";
-console.error(e);
-}
-}
-
-function ott(p,t,imdb){
-const e=encodeURIComponent(t);
-
-const map={
-8:["Netflix","https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",`https://www.netflix.com/search?q=${e}`],
-337:["Disney+","https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg",`https://www.disneyplus.com/search?q=${e}`],
-356:["Wavve","https://upload.wikimedia.org/wikipedia/commons/0/0c/Wavve_logo.svg",`https://www.wavve.com/search?keyword=${e}`],
-97:["TVING","https://upload.wikimedia.org/wikipedia/commons/1/1f/Tving_logo.svg",`https://www.tving.com/search?q=${e}`]
-};
-
-let h="";
-
-p.forEach(x=>{
-if(map[x.provider_id]){
-const o=map[x.provider_id];
-h+=`<div onclick="window.open('${o[2]}')"><img src="${o[1]}"><p>${o[0]}</p></div>`;
-}
-});
-
-if(imdb){
-h+=`<div onclick="window.open('https://www.imdb.com/title/${imdb}')"><img src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg"><p>IMDb</p></div>`;
-}
-
-return h||"OTT 없음";
+    return h || "OTT 없음";
 }
 
 async function rec(t,id){
-const r=await fetch(`https://api.themoviedb.org/3/${t}/${id}/recommendations?api_key=${API_KEY}&language=ko-KR`);
-const d=await r.json();
+    const r = await fetch(`https://api.themoviedb.org/3/${t}/${id}/recommendations?api_key=${API_KEY}&language=ko-KR`);
+    const d = await r.json();
 
-document.getElementById("recommend").innerHTML=
-(d.results||[]).slice(0,6).map(x=>`
-<img src="https://image.tmdb.org/t/p/w500${x.poster_path}" onclick="again('${x.title||x.name}')">
-`).join('');
+    document.getElementById("recommend").innerHTML =
+    (d.results||[]).slice(0,6).map(x=>`
+        <img src="https://image.tmdb.org/t/p/w500${x.poster_path}" onclick="again('${x.title||x.name}')">
+    `).join('');
 }
 
 function again(t){
-document.getElementById("search").value=t;
-searchMovie();
+    document.getElementById("search").value = t;
+    searchMovie();
 }
-
 </script>
 
 </body>
