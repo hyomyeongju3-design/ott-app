@@ -119,7 +119,6 @@ h2.section-title { text-align:left; margin-left:20px; }
 <script>
 const API_KEY="5369e70114a79b809d50c4075c60e7ac";
 
-// OTT 매핑
 const ottMap = {
   "범죄도시":["Coupang Play","Wavve"],
   "킹덤":["Netflix"],
@@ -155,7 +154,6 @@ function goHome(){
   loadAIRecommendations();
 }
 
-// AI 추천
 function loadAIRecommendations(){
   const container = document.getElementById("aiRec");
   const shuffled = aiPopularMovies.sort(()=>0.5-Math.random());
@@ -186,11 +184,23 @@ function getPosterPath(title){
   return map[title] || "";
 }
 
-// 검색
+async function getOTTProviders(id, type){
+  try{
+    const res = await fetch(`https://api.themoviedb.org/3/${type}/${id}/watch/providers?api_key=${API_KEY}`);
+    const data = await res.json();
+    const providers = data.results?.KR?.flatrate || [];
+    return providers.map(p => p.provider_name);
+  } catch(e){
+    console.error(e);
+    return [];
+  }
+}
+
 async function searchMovie(){
   const query=document.getElementById("search").value.trim();
   if(!query) return;
   document.getElementById("result").innerHTML="로딩중...";
+  
   try{
     const res=await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=ko-KR`);
     const data=await res.json();
@@ -208,14 +218,16 @@ async function searchMovie(){
         document.getElementById("overlay").style.background=`url(https://image.tmdb.org/t/p/original${item.backdrop_path}) no-repeat center / cover`;
       }
 
-      const providers = ottMap[title] || [];
-      const ottHtml = providers.map(p=>`<div onclick="window.open('${ottLinks[p]}${encodeURIComponent(title)}')">${p}</div>`).join('');
+      let providers = ottMap[title] || [];
+      const autoProviders = await getOTTProviders(item.id, item.media_type);
+      providers = Array.from(new Set([...providers, ...autoProviders]));
+      const ottHtml = providers.length ? providers.map(p=>`<div onclick="window.open('${ottLinks[p] ? ottLinks[p]+encodeURIComponent(title) : '#'}')">${p}</div>`).join('') : "OTT 정보 없음";
 
       resultsDiv.innerHTML += `
         <div class="result-item">
           <h2>${title}</h2>
           <img class="poster" src="${poster}">
-          <div class="ott">${ottHtml || "OTT 정보 없음"}</div>
+          <div class="ott">${ottHtml}</div>
         </div>
       `;
     }
