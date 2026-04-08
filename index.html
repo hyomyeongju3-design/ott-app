@@ -124,16 +124,20 @@ const ottMap = {
   "오징어 게임":["Netflix"],
   "이터널스":["Wavve"],
   "기생충":["Netflix","Watcha"],
-  "신과함께":["Coupang Play","TVING"]
+  "신과함께":["Coupang Play","TVING"],
+  "라라랜드":["Netflix"],
+  "어벤져스":["Disney+"],
+  "인셉션":["Netflix","Watcha"]
 };
 const ottLinks = {
   "Netflix":"https://www.netflix.com/search?q=",
   "Wavve":"https://www.wavve.com/search?keyword=",
   "Coupang Play":"https://www.coupangplay.com/search?keyword=",
   "TVING":"https://www.tving.com/search?q=",
-  "Watcha":"https://watcha.com/search?q="
+  "Watcha":"https://watcha.com/search?q=",
+  "Disney+":"https://www.disneyplus.com/search?q="
 };
-const aiPopularMovies = ["범죄도시","킹덤","승리호","오징어 게임","이터널스","기생충","신과함께"];
+const aiPopularMovies = Object.keys(ottMap);
 window.onload = ()=>{ loadAIRecommendations(); };
 document.getElementById("search").addEventListener("keypress",e=>{ if(e.key==="Enter") searchMovie(); });
 function goHome(){
@@ -145,7 +149,7 @@ function goHome(){
 function loadAIRecommendations(){
   const container = document.getElementById("aiRec");
   const shuffled = aiPopularMovies.sort(()=>0.5-Math.random());
-  container.innerHTML = shuffled.slice(0,5).map(title=>{
+  container.innerHTML = shuffled.slice(0,10).map(title=>{
     const poster = `https://image.tmdb.org/t/p/w500${getPosterPath(title)}`;
     return `<div onclick="searchAgain('${title}')"><img src="${poster}"><p>${title}</p></div>`;
   }).join('');
@@ -159,10 +163,13 @@ function getPosterPath(title){
     "범죄도시":"/2FzOEg1nGZjJK5vAaCVS0lbp6rL.jpg",
     "킹덤":"/7jp6Lq0IZhf6S2XqqX34p6Xzhvb.jpg",
     "승리호":"/4JvUml8A56kRky90ydm6r8c9JXf.jpg",
-    "오징어 게임":"/qgmiHYRz3xYijORrZpL5J0jtiMu.jpg",
+    "오징어 게임":"/qgmiHYRz3xY3pDQ2m5TkqU9FG9j.jpg",
     "이터널스":"/6GoZd1lUMCk8wev5CBwItMeXr1N.jpg",
     "기생충":"/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
-    "신과함께":"/kN9uDHRD8gIsY4o4Qq4R1GgwrvA.jpg"
+    "신과함께":"/kN9uDHRD8gIsY4o4Qq4R1GgwrvA.jpg",
+    "라라랜드":"/2d2qWqqfR6G6KxVgRLoFQXg0apS.jpg",
+    "어벤져스":"/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
+    "인셉션":"/qOa9YmIQxY3pDQ2m5TkqU9FG9j.jpg"
   };
   return map[title] || "";
 }
