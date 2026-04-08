@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OTT Hub MAX</title>
+<title>OTT search </title>
 <link rel="manifest" href="manifest.json">
 
 <style>
@@ -142,7 +142,7 @@ return html||"<p>제공 OTT 없음</p>";
 }
 
 async function aiRecommend(type,id){
-const res=await fetch(`https://api.themoviedb.org/3/${type}/${id}/recommendations?api_key=${API_KEY}&language=ko-KR`);
+const res=await fetch(`https://api.themoviedb.org/3/${type}/${id}/recommendations?api_key=${5369e70114a79b809d50c4075c60e7ac}&language=ko-KR`);
 const data=await res.json();
 
 document.getElementById("recommend").innerHTML=
