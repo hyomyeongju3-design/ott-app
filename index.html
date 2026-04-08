@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart OTT Search AI</title>
+<title>Smart OTT Search AI V3</title>
 <style>
 body {
   margin:0;
@@ -19,7 +19,7 @@ body {
   position: fixed;
   top:0; left:0;
   width:100%; height:100%;
-  backdrop-filter: blur(15px);
+  backdrop-filter: blur(20px);
   z-index:-1;
 }
 header {
@@ -28,17 +28,28 @@ header {
   font-weight:bold;
   text-shadow: 1px 1px 6px black;
 }
-input {
+#search-container {
+  margin-top: 10px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+#search {
   padding:12px;
-  width:240px;
+  width:300px;
   border:none;
-  border-radius:10px;
+  border-radius:20px;
+  backdrop-filter: blur(8px);
+  background: rgba(255,255,255,0.2);
+  color:white;
+  text-shadow: 1px 1px 3px black;
+  font-size:16px;
   margin-right:8px;
 }
 button {
   padding:12px;
   border:none;
-  border-radius:10px;
+  border-radius:20px;
   background:red;
   color:white;
   cursor:pointer;
@@ -102,8 +113,10 @@ h2.section-title {
 <div id="overlay"></div>
 <header>Smart OTT Search AI</header>
 
-<input id="search" placeholder="영화 / 드라마 검색">
-<button onclick="searchMovie()">검색</button>
+<div id="search-container">
+  <input id="search" placeholder="영화 / 드라마 검색">
+  <button onclick="searchMovie()">검색</button>
+</div>
 
 <div id="result"></div>
 
@@ -168,7 +181,7 @@ async function searchMovie(){
     `;
 
     getRecommendations(type,id);
-    getAIRecommendations(query, type);
+    getAIRecommendations(query, type, id);
 
   }catch(err){
     console.error(err);
@@ -179,26 +192,30 @@ async function searchMovie(){
 function renderOTT(providers, title, imdb){
   const e = encodeURIComponent(title);
   let html = "";
-  providers.forEach(p=>{
-    let link="#";
-    switch(p.provider_name.toLowerCase()){
-      case "netflix": link=`https://www.netflix.com/search?q=${e}`; break;
-      case "disney+": case "disney plus": link=`https://www.disneyplus.com/search?q=${e}`; break;
-      case "wavve": link=`https://www.wavve.com/search?keyword=${e}`; break;
-      case "tving": link=`https://www.tving.com/search?q=${e}`; break;
-      case "watcha": case "왓챠": link=`https://watcha.com/ko-KR/search?query=${e}`; break;
-      case "coupang play": link=`https://www.coupangplay.com/search/${e}`; break;
-      case "apple tv+": case "apple tv plus": link=`https://tv.apple.com/search/${e}`; break;
-      case "prime video": case "amazon prime video": link=`https://www.amazon.com/s?k=${e}&i=instant-video`; break;
-      default: link=`https://www.google.com/search?q=${e}+${encodeURIComponent(p.provider_name)}`;
-    }
-    const logo = p.logo_path? `https://image.tmdb.org/t/p/w200${p.logo_path}` : "";
-    html += `<div onclick="window.open('${link}')"><img src="${logo}"><p>${p.provider_name}</p></div>`;
+
+  const tmdbMap = {};
+  providers.forEach(p=>{ tmdbMap[p.provider_name.toLowerCase()] = true });
+
+  const ottList = [
+    {name:"Netflix", url:`https://www.netflix.com/search?q=${e}`},
+    {name:"Disney+", url:`https://www.disneyplus.com/search?q=${e}`},
+    {name:"Wavve", url:`https://www.wavve.com/search?keyword=${e}`},
+    {name:"TVING", url:`https://www.tving.com/search?q=${e}`},
+    {name:"Watcha", url:`https://watcha.com/ko-KR/search?query=${e}`},
+    {name:"Coupang Play", url:`https://www.coupangplay.com/search/${e}`},
+    {name:"Apple TV+", url:`https://tv.apple.com/search/${e}`},
+    {name:"Prime Video", url:`https://www.amazon.com/s?k=${e}&i=instant-video`}
+  ];
+
+  ottList.forEach(o=>{
+    const has = tmdbMap[o.name.toLowerCase()];
+    html += `<div onclick="window.open('${o.url}')"><p>${o.name}</p></div>`;
   });
+
   if(imdb){
-    html += `<div onclick="window.open('https://www.imdb.com/title/${imdb}')"><img src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg"><p>IMDb</p></div>`;
+    html += `<div onclick="window.open('https://www.imdb.com/title/${imdb}')"><p>IMDb</p></div>`;
   }
-  return html||"OTT 없음";
+  return html;
 }
 
 async function getRecommendations(type,id){
@@ -209,12 +226,13 @@ async function getRecommendations(type,id){
   `).join('');
 }
 
-async function getAIRecommendations(query,type){
+async function getAIRecommendations(query,type,id){
   const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=ko-KR&page=2`);
   const data = await res.json();
-  document.getElementById("aiRec").innerHTML=(data.results||[]).slice(0,6).map(x=>`
-    <img src="https://image.tmdb.org/t/p/w500${x.poster_path}" onclick="again('${x.title||x.name}')">
-  `).join('');
+  const results = (data.results||[]).slice(0,6);
+  document.getElementById("aiRec").innerHTML = results.map(x=>{
+    return `<img src="https://image.tmdb.org/t/p/w500${x.poster_path}" onclick="again('${x.title||x.name}')">`;
+  }).join('');
 }
 
 function again(title){
