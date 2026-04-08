@@ -3,16 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title> movie Search</title>
+<title>Smart OTT Movie Search</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icons/icon-192.png">
 <style>
 body {
   margin:0;
   font-family: Arial, sans-serif;
   color:white;
   text-align:center;
-  background:#111;
   background-size:cover;
   background-position:center;
   transition:background 0.5s ease;
@@ -131,7 +129,7 @@ async function searchMovie(){
     }
     const provRes=await fetch(`https://api.themoviedb.org/3/${type}/${id}/watch/providers?api_key=${API_KEY}`);
     const provData=await provRes.json();
-    const providers=provData.results?.KR?.flatrate||[];
+    const providers=provData.results?.KR?.flatrate || [];
     const extRes=await fetch(`https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${API_KEY}`);
     const extData=await extRes.json();
     const imdb=extData.imdb_id||"";
@@ -183,9 +181,9 @@ async function loadPopularMovies(){
   `).join('');
 }
 async function loadAIRecommendations(){
-  const res=await fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${API_KEY}&language=ko-KR&page=1`);
-  const data=await res.json();
-  const results=(data.results||[]).slice(0,6);
+  const res=await fetch(`https://api.themoviedb.org/3/movie/now_playing?api_key=${API_KEY}&language=ko-KR&page=1`);
+  const data=(await res.json()).results||[];
+  const results=data.slice(0,6);
   document.getElementById("aiRec").innerHTML=results.map(x=>`
     <img src="https://image.tmdb.org/t/p/w500${x.poster_path}" onclick="again('${x.title||x.name}')">
   `).join('');
